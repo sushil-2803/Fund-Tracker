@@ -13,28 +13,46 @@ function sanitizeBaseUrl(url) {
   return url.replace(/\/+$/, '');
 }
 
+export function isLocalUrl(url) {
+  if (!url) return false;
+  return (
+    url.includes('localhost') ||
+    url.includes('127.0.0.1') ||
+    url.includes('10.0.2.2') ||
+    /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(url)
+  );
+}
+
 export function validateApiUrl(rawUrl) {
   const url = sanitizeBaseUrl(rawUrl);
 
-  if (isProduction) {
-    if (!url) {
-      throw new Error(
-        'Production configuration error: EXPO_PUBLIC_API_BASE_URL is missing. Production builds strictly require a secure HTTPS API endpoint.'
-      );
-    }
-    if (!url.startsWith('https://')) {
-      throw new Error(
-        `Production security violation: Insecure API URL (${url}). Production builds strictly require HTTPS and never allow unencrypted HTTP connections.`
-      );
-    }
+  if (!url) {
+    return 'http://localhost:3001';
   }
 
-  return url || 'http://localhost:3001';
+  // Allow local development and LAN IP addresses across all build modes
+  if (isLocalUrl(url)) {
+    return url;
+  }
+
+  // For non-local endpoints in production builds, recommend HTTPS
+  if (isProduction && !url.startsWith('https://')) {
+    console.warn(
+      `[Security Warning] Non-local API URL (${url}) should use HTTPS in production builds.`
+    );
+  }
+
+  return url;
 }
 
-// Initial Base URL resolution
+// Initial Base URL resolution (safely guarded)
 const rawEnvUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-let currentHost = validateApiUrl(rawEnvUrl);
+let currentHost = 'http://localhost:3001';
+try {
+  currentHost = validateApiUrl(rawEnvUrl);
+} catch (e) {
+  console.warn('Initial API URL validation failed, falling back to localhost:', e);
+}
 let currentApiUrl = `${currentHost}/api`;
 
 // ── SecureStore Token Helpers ─────────────────────────────────────────────────
