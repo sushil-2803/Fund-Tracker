@@ -1,0 +1,15 @@
+// CMAKE_BUILD_PARALLEL_LEVEL does not limit Ninja when Android invokes it directly.
+// Apply job pools before AGP finalizes the native configuration for every module.
+gradle.beforeProject { project ->
+    ['com.android.application', 'com.android.library'].each { pluginId ->
+        project.pluginManager.withPlugin(pluginId) {
+            project.extensions.getByName('androidComponents').finalizeDsl { androidDsl ->
+                androidDsl.defaultConfig.externalNativeBuild.cmake.arguments.addAll([
+                    '-DCMAKE_JOB_POOLS:STRING=fundtracker_compile=1;fundtracker_link=1',
+                    '-DCMAKE_JOB_POOL_COMPILE=fundtracker_compile',
+                    '-DCMAKE_JOB_POOL_LINK=fundtracker_link'
+                ])
+            }
+        }
+    }
+}
