@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS, SPACING } from '../../theme/theme';
 
 export default function ConfirmModal({
@@ -20,6 +21,8 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -27,7 +30,15 @@ export default function ConfirmModal({
       animationType="fade"
       onRequestClose={onCancel}
     >
-      <View style={styles.overlay}>
+      <View
+        style={[
+          styles.overlay,
+          {
+            paddingTop: insets.top + SPACING.xl,
+            paddingBottom: insets.bottom + SPACING.xl,
+          },
+        ]}
+      >
         <View style={styles.modalCard}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
@@ -80,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
   },
   modalCard: {
     backgroundColor: COLORS.bgCard,
