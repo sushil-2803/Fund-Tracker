@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS, SPACING } from '../../theme/theme';
 import { fmt } from '../../utils/formatters';
 import { useToast } from '../../context/ToastContext';
@@ -33,6 +34,7 @@ export default function AllocationModal({
   presetExpenseId = null,
   onSuccess,
 }) {
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
 
   const [incomes, setIncomes] = useState([]);
@@ -225,10 +227,15 @@ export default function AllocationModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={styles.modalOverlay}
       >
-        <View style={styles.modalContainer}>
+        <View
+          style={[
+            styles.modalContainer,
+            { paddingBottom: Math.max(insets.bottom, SPACING.lg) },
+          ]}
+        >
           {/* Header */}
           <View style={styles.modalHeader}>
             <View>
@@ -597,7 +604,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderLight,
     maxHeight: '92%',
-    paddingBottom: Platform.OS === 'ios' ? 34 : SPACING.lg,
   },
   modalHeader: {
     flexDirection: 'row',
