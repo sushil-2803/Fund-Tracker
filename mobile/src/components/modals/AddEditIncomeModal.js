@@ -12,9 +12,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 import { Calendar, X, Plus, Check } from 'lucide-react-native';
-import { COLORS, RADIUS, SPACING } from '../../theme/theme';
+import { COLORS, PAYMENT_METHOD_OPTIONS, RADIUS, SPACING } from '../../theme/theme';
 import { fmt, todayISO } from '../../utils/formatters';
 import TagInput from '../common/TagInput';
 import { useToast } from '../../context/ToastContext';
@@ -23,6 +24,7 @@ import { api } from '../../api';
 const incomeSchema = z.object({
   amount: z.number({ invalid_type_error: 'Amount must be a valid number' }).positive('Amount must be greater than 0'),
   source: z.string().trim().min(1, 'Source is required').max(100, 'Source is too long'),
+  payment_method: z.enum(['cash', 'online', 'unspecified']),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be formatted as YYYY-MM-DD'),
   notes: z.string().optional(),
 });
@@ -34,11 +36,13 @@ export default function AddEditIncomeModal({
   onSuccess,
   allTags = [],
 }) {
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const isEditing = !!income;
 
   const [amount, setAmount] = useState('');
   const [source, setSource] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('online');
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState([]);
@@ -51,12 +55,14 @@ export default function AddEditIncomeModal({
     if (income) {
       setAmount(String(income.amount || ''));
       setSource(income.source || '');
+      setPaymentMethod(income.payment_method || 'unspecified');
       setDate(income.date ? String(income.date).slice(0, 10) : todayISO());
       setNotes(income.notes || '');
       setTags(Array.isArray(income.tags) ? income.tags : []);
     } else {
       setAmount('');
       setSource('');
+      setPaymentMethod('online');
       setDate(todayISO());
       setNotes('');
       setTags([]);
@@ -83,6 +89,7 @@ export default function AddEditIncomeModal({
     const validationResult = incomeSchema.safeParse({
       amount: parsedAmount,
       source: source.trim(),
+      payment_method: paymentMethod,
       date: date.trim(),
       notes: notes.trim() || undefined,
     });
@@ -105,6 +112,7 @@ export default function AddEditIncomeModal({
       const payload = {
         amount: parsedAmount,
         source: source.trim(),
+        payment_method: paymentMethod,
         date: date.trim(),
         notes: notes.trim() || undefined,
         tags,
@@ -134,10 +142,15 @@ export default function AddEditIncomeModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={styles.overlay}
       >
-        <View style={styles.sheetContainer}>
+        <View
+          style={[
+            styles.sheetContainer,
+            { paddingBottom: Math.max(insets.bottom, SPACING.lg) },
+          ]}
+        >
           {/* Header */}
           <View style={styles.sheetHeader}>
             <View>
@@ -202,6 +215,29 @@ export default function AddEditIncomeModal({
                 placeholder="e.g. Salary, Client Payout, Bonus"
                 placeholderTextColor={COLORS.textSubtle}
               />
+            </View>
+
+            {/* Payment Method */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>
+                Payment Method <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.methodSelector}>
+                {PAYMENT_METHOD_OPTIONS.map((option) => {
+                  const isSelected = paymentMethod === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[styles.methodOption, isSelected && styles.methodOptionActive]}
+                      onPress={() => setPaymentMethod(option.value)}
+                    >
+                      <Text style={[styles.methodOptionText, isSelected && styles.methodOptionTextActive]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
             {/* Date Input with Native Picker */}
@@ -299,7 +335,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: COLORS.borderLight,
     maxHeight: '90%',
-    paddingBottom: Platform.OS === 'ios' ? 34 : SPACING.lg,
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -394,6 +429,32 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 75,
+  },
+  methodSelector: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  methodOption: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: COLORS.bgElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.md,
+  },
+  methodOptionActive: {
+    backgroundColor: COLORS.primaryDim,
+    borderColor: COLORS.primary,
+  },
+  methodOptionText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  methodOptionTextActive: {
+    color: COLORS.white,
   },
   datePickerBtn: {
     flexDirection: 'row',
