@@ -21,7 +21,12 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0f14"
       },
-      "package": "com.fundtracker.mobile"
+      "package": "com.fundtracker.mobile",
+      "usesCleartextTraffic": true
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#0d0f14",
+      "barStyle": "light-content"
     },
     "plugins": [
       [
@@ -35,7 +40,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
+        "projectId": "87338fe6-0501-40e1-a479-cc3fd292686c"
       },
       "googleWebClientId": "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com",
       "googleIosClientId": "REPLACE_WITH_IOS_CLIENT_ID.apps.googleusercontent.com",
