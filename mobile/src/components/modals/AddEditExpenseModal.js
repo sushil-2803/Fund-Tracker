@@ -12,9 +12,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 import { Calendar, X, Plus, Check, ChevronDown } from 'lucide-react-native';
-import { COLORS, RADIUS, SPACING, PRESET_CATEGORIES } from '../../theme/theme';
+import { COLORS, PAYMENT_METHOD_OPTIONS, RADIUS, SPACING, PRESET_CATEGORIES } from '../../theme/theme';
 import { fmt, todayISO } from '../../utils/formatters';
 import TagInput from '../common/TagInput';
 import { useToast } from '../../context/ToastContext';
@@ -24,6 +25,7 @@ const expenseSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(100, 'Title is too long'),
   amount: z.number({ invalid_type_error: 'Amount must be a valid number' }).positive('Amount must be greater than 0'),
   category: z.string().min(1, 'Category is required'),
+  payment_method: z.enum(['cash', 'online', 'unspecified']),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be formatted as YYYY-MM-DD'),
   notes: z.string().optional(),
 });
@@ -35,6 +37,7 @@ export default function AddEditExpenseModal({
   onSuccess,
   allTags = [],
 }) {
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const isEditing = !!expense;
 
@@ -42,6 +45,7 @@ export default function AddEditExpenseModal({
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(PRESET_CATEGORIES[0]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('online');
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState([]);
@@ -55,6 +59,7 @@ export default function AddEditExpenseModal({
       setTitle(expense.title || '');
       setAmount(String(expense.amount || ''));
       setCategory(expense.category || PRESET_CATEGORIES[0]);
+      setPaymentMethod(expense.payment_method || 'unspecified');
       setDate(expense.date ? String(expense.date).slice(0, 10) : todayISO());
       setNotes(expense.notes || '');
       setTags(Array.isArray(expense.tags) ? expense.tags : []);
@@ -62,6 +67,7 @@ export default function AddEditExpenseModal({
       setTitle('');
       setAmount('');
       setCategory(PRESET_CATEGORIES[0]);
+      setPaymentMethod('online');
       setDate(todayISO());
       setNotes('');
       setTags([]);
@@ -90,6 +96,7 @@ export default function AddEditExpenseModal({
       title: title.trim(),
       amount: parsedAmount,
       category,
+      payment_method: paymentMethod,
       date: date.trim(),
       notes: notes.trim() || undefined,
     });
@@ -113,6 +120,7 @@ export default function AddEditExpenseModal({
         title: title.trim(),
         amount: parsedAmount,
         category,
+        payment_method: paymentMethod,
         date: date.trim(),
         notes: notes.trim() || undefined,
         tags,
@@ -142,10 +150,15 @@ export default function AddEditExpenseModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={styles.overlay}
       >
-        <View style={styles.sheetContainer}>
+        <View
+          style={[
+            styles.sheetContainer,
+            { paddingBottom: Math.max(insets.bottom, SPACING.lg) },
+          ]}
+        >
           {/* Header */}
           <View style={styles.sheetHeader}>
             <View>
@@ -256,6 +269,29 @@ export default function AddEditExpenseModal({
               )}
             </View>
 
+            {/* Payment Method */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>
+                Payment Method <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.methodSelector}>
+                {PAYMENT_METHOD_OPTIONS.map((option) => {
+                  const isSelected = paymentMethod === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[styles.methodOption, isSelected && styles.methodOptionActive]}
+                      onPress={() => setPaymentMethod(option.value)}
+                    >
+                      <Text style={[styles.methodOptionText, isSelected && styles.methodOptionTextActive]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
             {/* Date Input with Native Picker */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>
@@ -351,7 +387,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: COLORS.borderLight,
     maxHeight: '90%',
-    paddingBottom: Platform.OS === 'ios' ? 34 : SPACING.lg,
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -494,6 +529,32 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 75,
+  },
+  methodSelector: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  methodOption: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: COLORS.bgElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.md,
+  },
+  methodOptionActive: {
+    backgroundColor: COLORS.primaryDim,
+    borderColor: COLORS.primary,
+  },
+  methodOptionText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  methodOptionTextActive: {
+    color: COLORS.white,
   },
   datePickerBtn: {
     flexDirection: 'row',
