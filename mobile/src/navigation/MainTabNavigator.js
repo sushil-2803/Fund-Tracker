@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -49,6 +49,7 @@ function TabBarIcon({ focused, label, IconComponent, activeColor }) {
 
 export default function MainTabNavigator() {
   const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, SPACING.sm);
 
   return (
     <Tab.Navigator
@@ -59,8 +60,8 @@ export default function MainTabNavigator() {
           backgroundColor: COLORS.bgCard,
           borderTopWidth: 1,
           borderTopColor: COLORS.border,
-          height: Platform.OS === 'ios' ? 84 : 68,
-          paddingBottom: Platform.OS === 'ios' ? insets.bottom : SPACING.sm,
+          height: 60 + bottomInset,
+          paddingBottom: bottomInset,
           paddingTop: SPACING.xs,
           elevation: 12,
           shadowColor: '#000',
