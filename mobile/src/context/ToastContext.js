@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS, SPACING } from '../theme/theme';
 
 const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
+  const insets = useSafeAreaInsets();
   const [toast, setToast] = useState(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-20)).current;
@@ -61,6 +63,7 @@ export function ToastProvider({ children }) {
           style={[
             styles.container,
             {
+              top: insets.top + SPACING.sm,
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
@@ -104,7 +107,6 @@ export function useToast() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 54 : 36,
     left: SPACING.lg,
     right: SPACING.lg,
     zIndex: 99999,
