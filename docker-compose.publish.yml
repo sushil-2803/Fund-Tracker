@@ -1,0 +1,43 @@
+# Build and push from a laptop/desktop, not from the Raspberry Pi.
+#
+# Multi-arch publish flow:
+#   docker buildx create --use --name fund-tracker-builder
+#   docker buildx inspect --bootstrap
+#   docker compose -f docker-compose.publish.yml build
+#   docker compose -f docker-compose.publish.yml push
+#
+# For Raspberry Pi + desktop compatibility, keep DOCKER_DEFAULT_PLATFORM unset
+# and set PLATFORMS=linux/amd64,linux/arm64 when using buildx directly:
+#   docker buildx build --platform linux/amd64,linux/arm64 -t "$BACKEND_IMAGE" --push ./backend
+#   docker buildx build --platform linux/amd64,linux/arm64 -f frontend/Dockerfile -t "$FRONTEND_IMAGE" --push .
+#   docker buildx create --use --name fundtracker-builder
+#   docker buildx build --platform linux/amd64,linux/arm64 -t flyingphoenix/fundtracker-server:latest --push ./backend
+#   docker buildx build --platform linux/amd64,linux/arm64 -t flyingphoenix/fundtracker-frontend:latest --build-arg VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com --build-arg VITE_API_BASE_URL=https://fundtrackerapi.sushildubey.cloud/api --build-arg VITE_LOCAL_API_BASE_URL=http://192.168.1.57:3009/api --push ./frontend
+#
+# Required:
+#   BACKEND_IMAGE=docker.io/your-user/fund-tracker-backend:latest
+#   FRONTEND_IMAGE=docker.io/your-user/fund-tracker-frontend:latest
+#   VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+
+services:
+  backend:
+    image: ${DOCKERHUB_NAMESPACE:-your-dockerhub-username}/fundtracker-backend:${IMAGE_TAG:-latest}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      CLIENT_ORIGINS: ${CLIENT_ORIGINS:-https://fundtracker.sushildubey.cloud,http://192.168.1.57:5009}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-https://fundtracker.sushildubey.cloud}
+
+  frontend:
+    image: ${DOCKERHUB_NAMESPACE:-your-dockerhub-username}/fundtracker-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:?Set VITE_GOOGLE_CLIENT_ID}
+        VITE_FRONTEND_URL: ${VITE_FRONTEND_URL:-https://fundtracker.sushildubey.cloud}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://fundtracker.sushildubey.cloud/api}
+        VITE_LOCAL_API_BASE_URL: ${VITE_LOCAL_API_BASE_URL:-http://192.168.1.57:3009/api}

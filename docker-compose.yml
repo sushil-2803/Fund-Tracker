@@ -1,0 +1,57 @@
+
+services:
+### Uncomment the following block to enable PostgreSQL database service or use an external database connection string in the .env file ####
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fund_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+      build:
+        context: ./backend
+        dockerfile: Dockerfile
+      container_name: fundtracker-backend
+      environment:
+        NODE_ENV: production
+        PORT: 3000
+        # DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_URL:-localhost}:${POSTGRES_PORT:-5433}/${POSTGRES_DB:-splitsync}
+        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fund_tracker
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+        GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+        FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5003}
+        COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ports:
+        - "3003:3000"
+      # depends_on:
+      #   postgres:
+      #     condition: service_healthy
+      restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3003}
+    container_name: fundtracker-frontend
+    ports:
+      - "5003:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

@@ -1,0 +1,23 @@
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE, for example docker.io/your-user/fund-tracker-backend:latest}
+    pull_policy: always
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      CLIENT_ORIGINS: ${CLIENT_ORIGINS:-https://fundflow.sushildubey.cloud,http://192.168.1.57:5009}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-https://fundflowapi.sushildubey.cloud}
+    ports:
+      - "3009:3001"
+    restart: unless-stopped
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?Set FRONTEND_IMAGE, for example docker.io/your-user/fund-tracker-frontend:latest}
+    pull_policy: always
+    ports:
+      - "5009:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
