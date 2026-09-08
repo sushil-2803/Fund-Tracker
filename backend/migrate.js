@@ -77,6 +77,7 @@ async function migrate() {
       id         TEXT          PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
       user_id    TEXT          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       amount     NUMERIC(14,2) NOT NULL CHECK (amount > 0),
+      title      TEXT          NOT NULL,
       category   TEXT          NOT NULL,
       date       DATE          NOT NULL,
       notes      TEXT,
@@ -84,6 +85,9 @@ async function migrate() {
       updated_at TIMESTAMPTZ   NOT NULL DEFAULT NOW()
     )
   `);
+  await query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS title TEXT`);
+  await query(`UPDATE expenses SET title = category WHERE title IS NULL OR BTRIM(title) = ''`);
+  await query(`ALTER TABLE expenses ALTER COLUMN title SET NOT NULL`);
   console.log('  ✓ expenses');
 
   // ── allocations ────────────────────────────────────────────────────────────
@@ -137,6 +141,7 @@ async function migrate() {
     ['idx_incomes_date',   'incomes',     'date DESC'],
     ['idx_expenses_date',  'expenses',    'date DESC'],
     ['idx_incomes_source', 'incomes',     'source'],
+    ['idx_expenses_title', 'expenses',    'title'],
     ['idx_expenses_cat',   'expenses',    'category'],
   ];
   for (const [name, table, col] of indexes) {
