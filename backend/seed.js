@@ -44,11 +44,11 @@ async function addIncome(client, userId, { amount, source, date, notes, tags = [
   return id;
 }
 
-async function addExpense(client, userId, { amount, category, date, notes, tags = [] }) {
+async function addExpense(client, userId, { amount, title, category, date, notes, tags = [] }) {
   const id = uuidv4();
   await client.query(
-    `INSERT INTO expenses (id,user_id,amount,category,date,notes) VALUES ($1,$2,$3,$4,$5,$6)`,
-    [id, userId, amount, category, date, notes ?? null]
+    `INSERT INTO expenses (id,user_id,amount,title,category,date,notes) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [id, userId, amount, title ?? category, category, date, notes ?? null]
   );
   for (const t of tags) {
     const tid = await tagId(client, t);

@@ -16,10 +16,17 @@ const dashboardRouter   = require('./routes/dashboard');
 const app    = express();
 const PORT   = process.env.PORT || 3001;
 const isProd = process.env.NODE_ENV === 'production';
+const clientOrigins = (process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin:         process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+  origin(origin, cb) {
+    if (!origin || clientOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS origin not allowed: ${origin}`));
+  },
   methods:        ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
