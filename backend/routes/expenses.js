@@ -31,9 +31,9 @@ router.get('/', async (req, res) => {
     if (amount_min) { wheres.push(`e.amount >= $${p++}`);       params.push(amount_min); }
     if (amount_max) { wheres.push(`e.amount <= $${p++}`);       params.push(amount_max); }
     if (search) {
-      wheres.push(`(e.category ILIKE $${p} OR e.notes ILIKE $${p + 1})`);
-      params.push(`%${search}%`, `%${search}%`);
-      p += 2;
+      wheres.push(`(e.title ILIKE $${p} OR e.category ILIKE $${p + 1} OR e.notes ILIKE $${p + 2})`);
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      p += 3;
     }
 
     if (joins.length)  sql += ` ${joins.join(' ')}`;
@@ -75,8 +75,9 @@ router.get('/:id', async (req, res) => {
 
 // ── CREATE ────────────────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
-  const { amount, category, date, notes, tags } = req.body;
+  const { amount, title, category, date, notes, tags } = req.body;
   if (!amount || amount <= 0) return res.status(400).json({ error: 'Amount must be > 0' });
+  if (!title?.trim())         return res.status(400).json({ error: 'Title is required' });
   if (!category?.trim())      return res.status(400).json({ error: 'Category is required' });
   if (!date)                  return res.status(400).json({ error: 'Date is required' });
 
@@ -84,9 +85,9 @@ router.post('/', async (req, res) => {
     const id = uuidv4();
     await transaction(async (client) => {
       await client.query(
-        `INSERT INTO expenses (id, user_id, amount, category, date, notes)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [id, req.user.id, parseFloat(amount), category.trim(), date, notes || null]
+        `INSERT INTO expenses (id, user_id, amount, title, category, date, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, req.user.id, parseFloat(amount), title.trim(), category.trim(), date, notes || null]
       );
       if (tags?.length) await setExpenseTags(client, id, tags);
     });
@@ -106,7 +107,7 @@ router.put('/:id', async (req, res) => {
     );
     if (!existing[0]) return res.status(404).json({ error: 'Expense not found' });
 
-    const { amount, category, date, notes, tags } = req.body;
+    const { amount, title, category, date, notes, tags } = req.body;
     if (amount !== undefined) {
       const { rows: agg } = await query(
         `SELECT COALESCE(SUM(amount),0)::NUMERIC AS total FROM allocations WHERE expense_id = $1 AND user_id = $2`,
@@ -122,12 +123,14 @@ router.put('/:id', async (req, res) => {
       await client.query(`
         UPDATE expenses SET
           amount   = COALESCE($1, amount),
-          category = COALESCE($2, category),
-          date     = COALESCE($3, date),
-          notes    = COALESCE($4, notes)
-        WHERE id = $5 AND user_id = $6
+          title    = COALESCE($2, title),
+          category = COALESCE($3, category),
+          date     = COALESCE($4, date),
+          notes    = COALESCE($5, notes)
+        WHERE id = $6 AND user_id = $7
       `, [
         amount !== undefined ? parseFloat(amount) : null,
+        title?.trim()    || null,
         category?.trim() || null,
         date             || null,
         notes !== undefined ? (notes || null) : existing[0].notes,

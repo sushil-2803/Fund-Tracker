@@ -60,7 +60,7 @@ router.get('/:id', async (req, res) => {
 
     const income = await enrichIncome(rows[0]);
     const { rows: allocs } = await query(`
-      SELECT a.*, e.category AS expense_category, e.amount::NUMERIC AS expense_amount
+      SELECT a.*, e.title AS expense_title, e.category AS expense_category, e.amount::NUMERIC AS expense_amount
       FROM   allocations a
       JOIN   expenses e ON e.id = a.expense_id
       WHERE  a.income_id = $1 AND a.user_id = $2
