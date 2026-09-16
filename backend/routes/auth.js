@@ -115,6 +115,47 @@ router.post('/google', async (req, res) => {
   }
 });
 
+// ── POST /api/auth/demo ───────────────────────────────────────────────────────
+// For local development and demonstration without Google OAuth credentials.
+// Signs in as demo user (demo@fundtracker.app or requested demo email), creating it if needed.
+router.post('/demo', async (req, res) => {
+  const email = (req.body?.email || 'demo@fundtracker.app').toLowerCase().trim();
+  try {
+    const user = await transaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, email, name, avatar_url FROM users WHERE LOWER(email) = $1`,
+        [email]
+      );
+      if (rows[0]) return rows[0];
+
+      const id = uuidv4();
+      const name = email === 'demo@fundtracker.app' ? 'Demo User' : 'Local User';
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6c8ff7&color=fff`;
+      await client.query(
+        `INSERT INTO users (id, google_id, email, name, avatar_url)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, `demo_${Date.now()}`, email, name, avatarUrl]
+      );
+      return { id, email, name, avatar_url: avatarUrl };
+    });
+
+    const { accessToken, refreshToken } = await issueTokens(user);
+
+    res.json({
+      user: {
+        id:         user.id,
+        email:      user.email,
+        name:       user.name,
+        avatar_url: user.avatar_url,
+      },
+      access_token:  accessToken,
+      refresh_token: refreshToken,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── POST /api/auth/refresh ────────────────────────────────────────────────────
 router.post('/refresh', async (req, res) => {
   const { refresh_token } = req.body;
