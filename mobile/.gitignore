@@ -1,40 +1,51 @@
 # ── Environment ───────────────────────────────────────────────────────────────
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.production
 
-# Google Services config file (contains sensitive OAuth config — never commit)
+# Google Services config files (OAuth & Firebase credentials)
 google-services.json
 GoogleService-Info.plist
 
-# ── Expo ──────────────────────────────────────────────────────────────────────
+# ── Expo & EAS ────────────────────────────────────────────────────────────────
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+.eas/
 
-# ── Node ──────────────────────────────────────────────────────────────────────
+# ── Node Dependencies ─────────────────────────────────────────────────────────
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
 
-# ── Android ───────────────────────────────────────────────────────────────────
+# ── Android Build Output ──────────────────────────────────────────────────────
 android/
 !android/gradle/wrapper/gradle-wrapper.jar
 !android/gradlew
 !android/gradlew.bat
+*.apk
+*.aab
 *.keystore
+*.jks
 !debug.keystore
 
-# ── iOS ───────────────────────────────────────────────────────────────────────
+# ── iOS Build Output & Pods ───────────────────────────────────────────────────
 ios/
 *.xcworkspace
 Pods/
+*.ipa
 
-# ── macOS ─────────────────────────────────────────────────────────────────────
+# ── macOS / OS ────────────────────────────────────────────────────────────────
 .DS_Store
+*.pem
 
-# ── Misc ──────────────────────────────────────────────────────────────────────
+# ── Tooling / IDE ─────────────────────────────────────────────────────────────
 *.log
 .vscode/
+.idea/
