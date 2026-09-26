@@ -1,0 +1,66 @@
+{
+  "name": "fundtracker-mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "doctor": "expo-doctor",
+    "build:apk": "node scripts/build-and-install.js --build-only",
+    "install:apk": "node scripts/build-and-install.js --skip-build",
+    "dev:device": "node scripts/build-and-install.js",
+    "adb:reverse": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:3001 tcp:3001",
+    "adb:devices": "adb devices",
+    "adb:logcat": "adb logcat *:S ReactNative:V ReactNativeJS:V"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@react-native-async-storage/async-storage": "~1.23.1",
+    "@react-native-community/datetimepicker": "8.0.1",
+    "@react-native-google-signin/google-signin": "^13.1.0",
+    "@react-navigation/bottom-tabs": "^6.5.20",
+    "@react-navigation/native": "^6.1.17",
+    "@react-navigation/native-stack": "^6.9.26",
+    "@tanstack/react-query": "^5.67.0",
+    "axios": "^1.7.9",
+    "expo": "~57.0.0",
+    "expo-dev-client": "~57.0.0",
+    "expo-secure-store": "~15.0.0",
+    "expo-status-bar": "~3.0.0",
+    "lucide-react-native": "^0.475.0",
+    "react": "19.2.3",
+    "react-hook-form": "^7.54.2",
+    "react-native": "0.86.0",
+    "react-native-chart-kit": "^6.12.0",
+    "react-native-reanimated": "~4.2.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-svg": "~15.12.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "babel-preset-expo": "~57.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-expo": "~7.1.2",
+    "expo-doctor": "^1.7.0"
+  },
+  "overrides": {
+    "tar": "^6.2.1",
+    "uuid": "^11.1.1",
+    "fast-xml-parser": "^5.7.0",
+    "image-size": "^1.1.1",
+    "postcss": "^8.5.3",
+    "send": "^0.19.0",
+    "@xmldom/xmldom": "^0.9.0",
+    "decode-uri-component": "^0.5.0"
+  },
+  "private": true
+}
