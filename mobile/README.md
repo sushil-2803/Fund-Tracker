@@ -142,3 +142,5 @@ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
 ```
 
 Google Sign-In will work only in the custom development build installed by `npx expo run:android --device`, not Expo Go.
+
+npx expo run:android --variant release

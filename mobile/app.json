@@ -21,8 +21,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0f14"
       },
-      "package": "com.fundtracker.mobile",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.fundtracker.mobile"
     },
     "plugins": [
       [
