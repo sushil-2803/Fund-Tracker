@@ -63,12 +63,40 @@ async function migrate() {
       user_id    TEXT          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       amount     NUMERIC(14,2) NOT NULL CHECK (amount > 0),
       source     TEXT          NOT NULL,
+      payment_method TEXT      NOT NULL DEFAULT 'unspecified',
       date       DATE          NOT NULL,
       notes      TEXT,
       created_at TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ   NOT NULL DEFAULT NOW()
     )
   `);
+  await query(`
+    ALTER TABLE incomes
+    ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'unspecified'
+  `);
+  await query(`
+    UPDATE incomes
+    SET payment_method = 'unspecified'
+    WHERE payment_method IS NULL OR BTRIM(payment_method) = ''
+  `);
+  await query(`ALTER TABLE incomes ALTER COLUMN payment_method SET DEFAULT 'unspecified'`);
+  await query(`ALTER TABLE incomes ALTER COLUMN payment_method SET NOT NULL`);
+  await query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'incomes_payment_method_check'
+          AND conrelid = 'incomes'::regclass
+      ) THEN
+        ALTER TABLE incomes
+          ADD CONSTRAINT incomes_payment_method_check
+          CHECK (payment_method IN ('cash', 'online', 'unspecified')) NOT VALID;
+      END IF;
+    END $$
+  `);
+  await query(`ALTER TABLE incomes VALIDATE CONSTRAINT incomes_payment_method_check`);
   console.log('  ✓ incomes');
 
   // ── expenses ───────────────────────────────────────────────────────────────
@@ -79,6 +107,7 @@ async function migrate() {
       amount     NUMERIC(14,2) NOT NULL CHECK (amount > 0),
       title      TEXT          NOT NULL,
       category   TEXT          NOT NULL,
+      payment_method TEXT      NOT NULL DEFAULT 'unspecified',
       date       DATE          NOT NULL,
       notes      TEXT,
       created_at TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
@@ -88,6 +117,33 @@ async function migrate() {
   await query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS title TEXT`);
   await query(`UPDATE expenses SET title = category WHERE title IS NULL OR BTRIM(title) = ''`);
   await query(`ALTER TABLE expenses ALTER COLUMN title SET NOT NULL`);
+  await query(`
+    ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'unspecified'
+  `);
+  await query(`
+    UPDATE expenses
+    SET payment_method = 'unspecified'
+    WHERE payment_method IS NULL OR BTRIM(payment_method) = ''
+  `);
+  await query(`ALTER TABLE expenses ALTER COLUMN payment_method SET DEFAULT 'unspecified'`);
+  await query(`ALTER TABLE expenses ALTER COLUMN payment_method SET NOT NULL`);
+  await query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'expenses_payment_method_check'
+          AND conrelid = 'expenses'::regclass
+      ) THEN
+        ALTER TABLE expenses
+          ADD CONSTRAINT expenses_payment_method_check
+          CHECK (payment_method IN ('cash', 'online', 'unspecified')) NOT VALID;
+      END IF;
+    END $$
+  `);
+  await query(`ALTER TABLE expenses VALIDATE CONSTRAINT expenses_payment_method_check`);
   console.log('  ✓ expenses');
 
   // ── allocations ────────────────────────────────────────────────────────────
@@ -141,8 +197,10 @@ async function migrate() {
     ['idx_incomes_date',   'incomes',     'date DESC'],
     ['idx_expenses_date',  'expenses',    'date DESC'],
     ['idx_incomes_source', 'incomes',     'source'],
+    ['idx_incomes_payment_method', 'incomes', 'payment_method'],
     ['idx_expenses_title', 'expenses',    'title'],
     ['idx_expenses_cat',   'expenses',    'category'],
+    ['idx_expenses_payment_method', 'expenses', 'payment_method'],
   ];
   for (const [name, table, col] of indexes) {
     await query(`CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${col})`);
