@@ -106,6 +106,7 @@ async function enrichIncome(row) {
   return {
     ...row,
     amount:           round2(row.amount),
+    payment_method:   row.payment_method || 'unspecified',
     allocated_amount: round2(allocated),
     remaining_amount: round2(remaining),
     status,
@@ -123,6 +124,7 @@ async function enrichExpense(row) {
   return {
     ...row,
     amount:         round2(row.amount),
+    payment_method: row.payment_method || 'unspecified',
     settled_amount: round2(settled),
     pending_amount: round2(pending),
     status,
