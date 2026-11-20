@@ -4,6 +4,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { query, transaction } = require('../db');
 const { setIncomeTags, enrichIncome } = require('../helpers');
+const { normalizePaymentMethod } = require('../paymentMethods');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -12,8 +13,14 @@ router.use(authenticate); // All income routes require auth
 // ── LIST ──────────────────────────────────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { source, status, tag, date_from, date_to, search, amount_min, amount_max } = req.query;
+    const { source, status, tag, payment_method, date_from, date_to, search, amount_min, amount_max } = req.query;
     const userId = req.user.id;
+    const paymentMethodFilter = payment_method
+      ? normalizePaymentMethod(payment_method, null)
+      : null;
+    if (payment_method && !paymentMethodFilter) {
+      return res.status(400).json({ error: 'Payment method must be cash, online, or unspecified' });
+    }
 
     let sql = `SELECT DISTINCT i.* FROM incomes i`;
     const joins = [], wheres = [`i.user_id = $1`], params = [userId];
@@ -26,6 +33,7 @@ router.get('/', async (req, res) => {
       params.push(tag);
     }
     if (source)     { wheres.push(`i.source ILIKE $${p++}`);  params.push(`%${source}%`); }
+    if (paymentMethodFilter) { wheres.push(`i.payment_method = $${p++}`); params.push(paymentMethodFilter); }
     if (date_from)  { wheres.push(`i.date >= $${p++}`);        params.push(date_from); }
     if (date_to)    { wheres.push(`i.date <= $${p++}`);        params.push(date_to); }
     if (amount_min) { wheres.push(`i.amount >= $${p++}`);      params.push(amount_min); }
@@ -75,18 +83,20 @@ router.get('/:id', async (req, res) => {
 
 // ── CREATE ────────────────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
-  const { amount, source, date, notes, tags } = req.body;
+  const { amount, source, payment_method, date, notes, tags } = req.body;
+  const normalizedPaymentMethod = normalizePaymentMethod(payment_method);
   if (!amount || amount <= 0) return res.status(400).json({ error: 'Amount must be > 0' });
   if (!source?.trim())        return res.status(400).json({ error: 'Source is required' });
+  if (!normalizedPaymentMethod) return res.status(400).json({ error: 'Payment method must be cash, online, or unspecified' });
   if (!date)                  return res.status(400).json({ error: 'Date is required' });
 
   try {
     const id = uuidv4();
     await transaction(async (client) => {
       await client.query(
-        `INSERT INTO incomes (id, user_id, amount, source, date, notes)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [id, req.user.id, parseFloat(amount), source.trim(), date, notes || null]
+        `INSERT INTO incomes (id, user_id, amount, source, payment_method, date, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, req.user.id, parseFloat(amount), source.trim(), normalizedPaymentMethod, date, notes || null]
       );
       if (tags?.length) await setIncomeTags(client, id, tags);
     });
@@ -106,7 +116,13 @@ router.put('/:id', async (req, res) => {
     );
     if (!existing[0]) return res.status(404).json({ error: 'Income not found' });
 
-    const { amount, source, date, notes, tags } = req.body;
+    const { amount, source, payment_method, date, notes, tags } = req.body;
+    const normalizedPaymentMethod = payment_method === undefined
+      ? undefined
+      : normalizePaymentMethod(payment_method);
+    if (payment_method !== undefined && !normalizedPaymentMethod) {
+      return res.status(400).json({ error: 'Payment method must be cash, online, or unspecified' });
+    }
     if (amount !== undefined) {
       const { rows: agg } = await query(
         `SELECT COALESCE(SUM(amount),0)::NUMERIC AS total FROM allocations WHERE income_id = $1 AND user_id = $2`,
@@ -124,13 +140,15 @@ router.put('/:id', async (req, res) => {
           amount = COALESCE($1, amount),
           source = COALESCE($2, source),
           date   = COALESCE($3, date),
-          notes  = COALESCE($4, notes)
-        WHERE id = $5 AND user_id = $6
+          notes  = COALESCE($4, notes),
+          payment_method = COALESCE($5, payment_method)
+        WHERE id = $6 AND user_id = $7
       `, [
         amount !== undefined ? parseFloat(amount) : null,
         source?.trim() || null,
         date           || null,
         notes !== undefined ? (notes || null) : existing[0].notes,
+        normalizedPaymentMethod ?? null,
         req.params.id, req.user.id,
       ]);
       if (tags !== undefined) await setIncomeTags(client, req.params.id, tags);
