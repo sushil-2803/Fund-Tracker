@@ -67,15 +67,16 @@ router.get('/summary', async (req, res) => {
 
     // Recent activity
     const { rows: recentActivity } = await query(`
-      SELECT id, 'income'  AS type, source   AS title, amount::NUMERIC, date, created_at
+      SELECT id, 'income'  AS type, source   AS title, amount::NUMERIC, payment_method, date, created_at
       FROM   incomes WHERE user_id = $1
       UNION ALL
-      SELECT id, 'expense' AS type, title, amount::NUMERIC, date, created_at
+      SELECT id, 'expense' AS type, title, amount::NUMERIC, payment_method, date, created_at
       FROM   expenses WHERE user_id = $1
       UNION ALL
       SELECT a.id, 'allocation' AS type,
              (i.source || ' → ' || e.title) AS title,
-             a.amount::NUMERIC, a.created_at::DATE AS date, a.created_at
+             a.amount::NUMERIC, NULL::TEXT AS payment_method,
+             a.created_at::DATE AS date, a.created_at
       FROM   allocations a
       JOIN   incomes  i ON i.id = a.income_id
       JOIN   expenses e ON e.id = a.expense_id
