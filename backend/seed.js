@@ -29,11 +29,11 @@ async function tagId(client, name) {
   return r?.id;
 }
 
-async function addIncome(client, userId, { amount, source, date, notes, tags = [] }) {
+async function addIncome(client, userId, { amount, source, payment_method = 'online', date, notes, tags = [] }) {
   const id = uuidv4();
   await client.query(
-    `INSERT INTO incomes (id,user_id,amount,source,date,notes) VALUES ($1,$2,$3,$4,$5,$6)`,
-    [id, userId, amount, source, date, notes ?? null]
+    `INSERT INTO incomes (id,user_id,amount,source,payment_method,date,notes) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [id, userId, amount, source, payment_method, date, notes ?? null]
   );
   for (const t of tags) {
     const tid = await tagId(client, t);
@@ -44,11 +44,11 @@ async function addIncome(client, userId, { amount, source, date, notes, tags = [
   return id;
 }
 
-async function addExpense(client, userId, { amount, title, category, date, notes, tags = [] }) {
+async function addExpense(client, userId, { amount, title, category, payment_method = 'online', date, notes, tags = [] }) {
   const id = uuidv4();
   await client.query(
-    `INSERT INTO expenses (id,user_id,amount,title,category,date,notes) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-    [id, userId, amount, title ?? category, category, date, notes ?? null]
+    `INSERT INTO expenses (id,user_id,amount,title,category,payment_method,date,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [id, userId, amount, title ?? category, category, payment_method, date, notes ?? null]
   );
   for (const t of tags) {
     const tid = await tagId(client, t);
@@ -94,18 +94,18 @@ async function seed() {
     const salaryJan  = await addIncome(client, user1Id, { amount: 85000, source: 'Salary – January',        date: daysAgo(50), tags: ['salary','acme','monthly'] });
     const salaryFeb  = await addIncome(client, user1Id, { amount: 85000, source: 'Salary – February',       date: daysAgo(20), tags: ['salary','acme','monthly'] });
     const freelance  = await addIncome(client, user1Id, { amount: 32000, source: 'Freelance – UI Project',  date: daysAgo(35), tags: ['freelance','design'] });
-    const tripFund   = await addIncome(client, user1Id, { amount: 20000, source: 'Goa Trip Contributions',  date: daysAgo(25), tags: ['trip','goa','shared'] });
+    const tripFund   = await addIncome(client, user1Id, { amount: 20000, source: 'Goa Trip Contributions', payment_method: 'cash', date: daysAgo(25), tags: ['trip','goa','shared'] });
     const reimb      = await addIncome(client, user1Id, { amount:  4500, source: 'Office Reimbursement Q1', date: daysAgo(12), tags: ['reimbursement','office'] });
     const familyXfer = await addIncome(client, user1Id, { amount: 15000, source: 'Family Transfer',         date: daysAgo(7),  tags: ['family','medical'] });
 
     console.log('🧾  Inserting expenses…');
     const rent          = await addExpense(client, user1Id, { amount: 22000, category: 'Rent',                date: daysAgo(45), tags: ['rent','housing'] });
-    const groceries     = await addExpense(client, user1Id, { amount:  6800, category: 'Groceries',           date: daysAgo(38), tags: ['food','groceries'] });
+    const groceries     = await addExpense(client, user1Id, { amount:  6800, category: 'Groceries', payment_method: 'cash', date: daysAgo(38), tags: ['food','groceries'] });
     const electricity   = await addExpense(client, user1Id, { amount:  2100, category: 'Utilities',           date: daysAgo(30), tags: ['utilities','housing'] });
     const fuel          = await addExpense(client, user1Id, { amount:  3200, category: 'Fuel',                date: daysAgo(28), tags: ['fuel','transport','reimbursement'] });
     const internet      = await addExpense(client, user1Id, { amount:  1300, category: 'Internet',            date: daysAgo(27), tags: ['utilities','reimbursement'] });
     const hotel         = await addExpense(client, user1Id, { amount:  8500, category: 'Accommodation',       date: daysAgo(22), tags: ['trip','goa','hotel'] });
-    const goaFood       = await addExpense(client, user1Id, { amount:  4200, category: 'Food & Dining',       date: daysAgo(21), tags: ['food','trip','goa'] });
+    const goaFood       = await addExpense(client, user1Id, { amount:  4200, category: 'Food & Dining', payment_method: 'cash', date: daysAgo(21), tags: ['food','trip','goa'] });
     const goaFuel       = await addExpense(client, user1Id, { amount:  2800, category: 'Fuel',                date: daysAgo(20), tags: ['fuel','trip','goa'] });
     const medical       = await addExpense(client, user1Id, { amount: 12500, category: 'Medical',             date: daysAgo(10), tags: ['medical','health'] });
     const shopping      = await addExpense(client, user1Id, { amount:  7600, category: 'Shopping',            date: daysAgo(15), tags: ['shopping','personal'] });
