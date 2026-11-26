@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { todayISO } from '../utils';
+import { PAYMENT_METHOD_OPTIONS, todayISO } from '../utils';
 import { TagInput } from './shared';
 import { useToast } from '../context/ToastContext';
 
@@ -16,6 +16,7 @@ export default function ExpenseModal({ onClose, onSaved, existing }) {
     amount:   existing?.amount ?? '',
     title:    existing?.title ?? existing?.category ?? '',
     category: existing?.category ?? '',
+    payment_method: existing ? (existing.payment_method || 'unspecified') : 'online',
     date:     existing?.date?.slice(0,10) ?? todayISO(),
     notes:    existing?.notes ?? '',
     tags:     existing?.tags ?? [],
@@ -48,6 +49,7 @@ export default function ExpenseModal({ onClose, onSaved, existing }) {
         amount: parseFloat(form.amount),
         title: form.title.trim(),
         category: form.category.trim(),
+        payment_method: form.payment_method,
         date: form.date,
         notes: form.notes || null,
         tags: form.tags,
@@ -113,6 +115,14 @@ export default function ExpenseModal({ onClose, onSaved, existing }) {
                 <datalist id="category-list">
                   {CATEGORIES.map(c => <option key={c} value={c} />)}
                 </datalist>
+              </div>
+              <div className="form-group">
+                <label>Payment Method</label>
+                <select value={form.payment_method} onChange={set('payment_method')} required>
+                  {PAYMENT_METHOD_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>Notes (optional)</label>
