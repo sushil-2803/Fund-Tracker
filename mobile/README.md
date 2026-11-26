@@ -64,7 +64,9 @@ npm run lint
 npx expo prebuild --clean
 npx expo start --clear
 ```
+
 # Instructions for local development with a physical Android device
+
 From the project root:
 
 ```powershell
@@ -106,6 +108,7 @@ npm.cmd run start
 ```
 
 # Native Google Sign-In requires this custom development build; it will not work in Expo Go.
+
 Annotation 1
 
 For a connected Android device:
@@ -143,4 +146,30 @@ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
 
 Google Sign-In will work only in the custom development build installed by `npx expo run:android --device`, not Expo Go.
 
-npx expo run:android --variant release
+## Local Android release APK
+
+From the `mobile` directory:
+
+```powershell
+npm run build:android:apk
+```
+
+The command sets `NODE_ENV=production`, limits Gradle to two workers, and compiles Kotlin in the Gradle process to reduce memory use. It caps Java and Node heap sizes and uses CMake job pools to compile one native C++ source at a time. These settings still apply after regenerating the native Android project.
+
+On Windows, the command checks available committed memory from RAM and paging files before starting Gradle. It requires at least 4 GB of headroom. If the check fails, close memory-heavy applications or enable a system-managed paging file and retry.
+
+The APK is written to `android/app/build/outputs/apk/release/app-release.apk`.
+
+For a clean rebuild:
+
+```powershell
+npm run build:android:apk -- --clean
+```
+
+Run Local Android release build manually:
+
+```powershell
+cd D:\Projects\fund-tracker\mobile
+$env:NODE_ENV = 'production'
+.\gradlew.bat assembleRelease
+```

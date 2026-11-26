@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { todayISO } from '../utils';
+import { PAYMENT_METHOD_OPTIONS, todayISO } from '../utils';
 import { TagInput } from './shared';
 import { useToast } from '../context/ToastContext';
 
@@ -9,6 +9,7 @@ export default function IncomeModal({ onClose, onSaved, existing }) {
   const [form, setForm] = useState({
     amount: existing?.amount ?? '',
     source: existing?.source ?? '',
+    payment_method: existing ? (existing.payment_method || 'unspecified') : 'online',
     date:   existing?.date?.slice(0,10) ?? todayISO(),
     notes:  existing?.notes ?? '',
     tags:   existing?.tags ?? [],
@@ -39,6 +40,7 @@ export default function IncomeModal({ onClose, onSaved, existing }) {
       const payload = {
         amount: parseFloat(form.amount),
         source: form.source.trim(),
+        payment_method: form.payment_method,
         date: form.date,
         notes: form.notes || null,
         tags: form.tags,
@@ -84,6 +86,14 @@ export default function IncomeModal({ onClose, onSaved, existing }) {
                 <label>Source</label>
                 <input type="text" placeholder="e.g. Salary, Client Payment, Trip Fund"
                   value={form.source} onChange={set('source')} required />
+              </div>
+              <div className="form-group">
+                <label>Payment Method</label>
+                <select value={form.payment_method} onChange={set('payment_method')} required>
+                  {PAYMENT_METHOD_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>Notes (optional)</label>

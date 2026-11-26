@@ -40,6 +40,17 @@ export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+export const PAYMENT_METHOD_OPTIONS = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'online', label: 'Online' },
+  { value: 'unspecified', label: 'Not specified' },
+];
+
+export function paymentMethodLabel(method) {
+  const normalized = String(method || '').toLowerCase();
+  return PAYMENT_METHOD_OPTIONS.find(option => option.value === normalized)?.label || 'Not specified';
+}
+
 /**
  * Status → badge class
  */

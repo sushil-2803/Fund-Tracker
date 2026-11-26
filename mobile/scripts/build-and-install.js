@@ -1,6 +1,7 @@
 const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { buildAndroidApk } = require('./build-android-apk');
 
 const MOBILE_ROOT = path.resolve(__dirname, '..');
 const ANDROID_DIR = path.join(MOBILE_ROOT, 'android');
@@ -66,10 +67,7 @@ function ensureNativeProject() {
 
 function buildApk() {
   console.log('\n\x1b[34m[2/5] Compiling Debug APK with Gradle...\x1b[0m');
-  const isWindows = process.platform === 'win32';
-  const gradlewCmd = isWindows ? 'gradlew.bat assembleDebug' : './gradlew assembleDebug';
-
-  runCmd(gradlewCmd, ANDROID_DIR);
+  buildAndroidApk('debug');
 
   if (!fs.existsSync(APK_PATH)) {
     console.error(`\x1b[31m[Error] APK not found at: ${APK_PATH}\x1b[0m`);

@@ -4,6 +4,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { query, transaction } = require('../db');
 const { setExpenseTags, enrichExpense } = require('../helpers');
+const { normalizePaymentMethod } = require('../paymentMethods');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -12,8 +13,14 @@ router.use(authenticate);
 // ── LIST ──────────────────────────────────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { category, status, tag, date_from, date_to, search, amount_min, amount_max } = req.query;
+    const { category, status, tag, payment_method, date_from, date_to, search, amount_min, amount_max } = req.query;
     const userId = req.user.id;
+    const paymentMethodFilter = payment_method
+      ? normalizePaymentMethod(payment_method, null)
+      : null;
+    if (payment_method && !paymentMethodFilter) {
+      return res.status(400).json({ error: 'Payment method must be cash, online, or unspecified' });
+    }
 
     let sql = `SELECT DISTINCT e.* FROM expenses e`;
     const joins = [], wheres = [`e.user_id = $1`], params = [userId];
@@ -26,6 +33,7 @@ router.get('/', async (req, res) => {
       params.push(tag);
     }
     if (category)   { wheres.push(`e.category ILIKE $${p++}`); params.push(`%${category}%`); }
+    if (paymentMethodFilter) { wheres.push(`e.payment_method = $${p++}`); params.push(paymentMethodFilter); }
     if (date_from)  { wheres.push(`e.date >= $${p++}`);         params.push(date_from); }
     if (date_to)    { wheres.push(`e.date <= $${p++}`);         params.push(date_to); }
     if (amount_min) { wheres.push(`e.amount >= $${p++}`);       params.push(amount_min); }
@@ -75,19 +83,21 @@ router.get('/:id', async (req, res) => {
 
 // ── CREATE ────────────────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
-  const { amount, title, category, date, notes, tags } = req.body;
+  const { amount, title, category, payment_method, date, notes, tags } = req.body;
+  const normalizedPaymentMethod = normalizePaymentMethod(payment_method);
   if (!amount || amount <= 0) return res.status(400).json({ error: 'Amount must be > 0' });
   if (!title?.trim())         return res.status(400).json({ error: 'Title is required' });
   if (!category?.trim())      return res.status(400).json({ error: 'Category is required' });
+  if (!normalizedPaymentMethod) return res.status(400).json({ error: 'Payment method must be cash, online, or unspecified' });
   if (!date)                  return res.status(400).json({ error: 'Date is required' });
 
   try {
     const id = uuidv4();
     await transaction(async (client) => {
       await client.query(
-        `INSERT INTO expenses (id, user_id, amount, title, category, date, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [id, req.user.id, parseFloat(amount), title.trim(), category.trim(), date, notes || null]
+        `INSERT INTO expenses (id, user_id, amount, title, category, payment_method, date, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [id, req.user.id, parseFloat(amount), title.trim(), category.trim(), normalizedPaymentMethod, date, notes || null]
       );
       if (tags?.length) await setExpenseTags(client, id, tags);
     });
@@ -107,7 +117,13 @@ router.put('/:id', async (req, res) => {
     );
     if (!existing[0]) return res.status(404).json({ error: 'Expense not found' });
 
-    const { amount, title, category, date, notes, tags } = req.body;
+    const { amount, title, category, payment_method, date, notes, tags } = req.body;
+    const normalizedPaymentMethod = payment_method === undefined
+      ? undefined
+      : normalizePaymentMethod(payment_method);
+    if (payment_method !== undefined && !normalizedPaymentMethod) {
+      return res.status(400).json({ error: 'Payment method must be cash, online, or unspecified' });
+    }
     if (amount !== undefined) {
       const { rows: agg } = await query(
         `SELECT COALESCE(SUM(amount),0)::NUMERIC AS total FROM allocations WHERE expense_id = $1 AND user_id = $2`,
@@ -126,14 +142,16 @@ router.put('/:id', async (req, res) => {
           title    = COALESCE($2, title),
           category = COALESCE($3, category),
           date     = COALESCE($4, date),
-          notes    = COALESCE($5, notes)
-        WHERE id = $6 AND user_id = $7
+          notes    = COALESCE($5, notes),
+          payment_method = COALESCE($6, payment_method)
+        WHERE id = $7 AND user_id = $8
       `, [
         amount !== undefined ? parseFloat(amount) : null,
         title?.trim()    || null,
         category?.trim() || null,
         date             || null,
         notes !== undefined ? (notes || null) : existing[0].notes,
+        normalizedPaymentMethod ?? null,
         req.params.id, req.user.id,
       ]);
       if (tags !== undefined) await setExpenseTags(client, req.params.id, tags);

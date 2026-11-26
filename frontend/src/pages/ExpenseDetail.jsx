@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { fmt, fmtDate, fmtDateTime } from '../utils';
+import { fmt, fmtDate, fmtDateTime, paymentMethodLabel } from '../utils';
 import { StatusBadge, Loading, ProgressBar, ConfirmModal } from '../components/shared';
 import ExpenseModal from '../components/ExpenseModal';
 import AllocationModal from '../components/AllocationModal';
@@ -179,6 +179,10 @@ export default function ExpenseDetail() {
                 <div className="stat-row">
                   <span className="stat-row-label">Date</span>
                   <span style={{ fontSize: 13 }}>{fmtDate(expense.date)}</span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-row-label">Payment Method</span>
+                  <span style={{ fontSize: 13 }}>{paymentMethodLabel(expense.payment_method)}</span>
                 </div>
                 <div className="stat-row">
                   <span className="stat-row-label">Created</span>

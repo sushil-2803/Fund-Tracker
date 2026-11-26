@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
-import { fmt, fmtDate } from '../utils';
+import { fmt, fmtDate, paymentMethodLabel } from '../utils';
 import { StatusBadge, Loading, EmptyState, ProgressBar, ConfirmModal } from '../components/shared';
 import ExpenseModal from '../components/ExpenseModal';
 import { useToast } from '../context/ToastContext';
@@ -17,6 +17,7 @@ export default function Expenses() {
   const [filters, setFilters] = useState({
     search: '',
     status: searchParams.get('status') || '',
+    payment_method: '',
     date_from: '',
     date_to: '',
   });
@@ -27,6 +28,7 @@ export default function Expenses() {
       const params = {};
       if (filters.search) params.search = filters.search;
       if (filters.status) params.status = filters.status;
+      if (filters.payment_method) params.payment_method = filters.payment_method;
       if (filters.date_from) params.date_from = filters.date_from;
       if (filters.date_to) params.date_to = filters.date_to;
       setExpenses(await api.expenses.list(params));
@@ -78,6 +80,16 @@ export default function Expenses() {
             <option value="PARTIALLY_SETTLED">Partial</option>
             <option value="SETTLED">Settled</option>
           </select>
+          <select
+            className="filter-input"
+            value={filters.payment_method}
+            onChange={e => setFilters(f => ({ ...f, payment_method: e.target.value }))}
+          >
+            <option value="">All payment methods</option>
+            <option value="cash">Cash</option>
+            <option value="online">Online</option>
+            <option value="unspecified">Not specified</option>
+          </select>
           <input className="filter-input" type="date"
             value={filters.date_from}
             onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))} />
@@ -98,6 +110,7 @@ export default function Expenses() {
                     <th>Title</th>
                     <th>Category</th>
                     <th>Date</th>
+                    <th>Payment Method</th>
                     <th>Amount</th>
                     <th>Settled</th>
                     <th>Pending</th>
@@ -113,6 +126,7 @@ export default function Expenses() {
                       <td style={{ fontWeight: 500 }}>{exp.title || exp.category}</td>
                       <td style={{ color: 'var(--text2)' }}>{exp.category}</td>
                       <td style={{ color: 'var(--text2)' }}>{fmtDate(exp.date)}</td>
+                      <td><span className="tag">{paymentMethodLabel(exp.payment_method)}</span></td>
                       <td className="amount">{fmt(exp.amount)}</td>
                       <td className="amount" style={{ color: 'var(--green)' }}>{fmt(exp.settled_amount)}</td>
                       <td className="amount" style={{ color: exp.pending_amount > 0 ? 'var(--amber)' : 'var(--text3)' }}>
