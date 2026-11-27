@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { fmt, fmtDate } from '../utils';
+import { fmt, fmtDate, paymentMethodLabel } from '../utils';
 import { StatusBadge, Loading, EmptyState, ProgressBar, ConfirmModal } from '../components/shared';
 import IncomeModal from '../components/IncomeModal';
 import { useToast } from '../context/ToastContext';
@@ -13,7 +13,7 @@ export default function Incomes() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const [deleting, setDeleting] = useState(null);
-  const [filters, setFilters] = useState({ search: '', status: '', date_from: '', date_to: '' });
+  const [filters, setFilters] = useState({ search: '', status: '', payment_method: '', date_from: '', date_to: '' });
 
   async function load() {
     setLoading(true);
@@ -21,6 +21,7 @@ export default function Incomes() {
       const params = {};
       if (filters.search) params.search = filters.search;
       if (filters.status) params.status = filters.status;
+      if (filters.payment_method) params.payment_method = filters.payment_method;
       if (filters.date_from) params.date_from = filters.date_from;
       if (filters.date_to) params.date_to = filters.date_to;
       setIncomes(await api.incomes.list(params));
@@ -72,6 +73,16 @@ export default function Incomes() {
             <option value="PARTIALLY_USED">Partial</option>
             <option value="FULLY_USED">Fully Used</option>
           </select>
+          <select
+            className="filter-input"
+            value={filters.payment_method}
+            onChange={e => setFilters(f => ({ ...f, payment_method: e.target.value }))}
+          >
+            <option value="">All payment methods</option>
+            <option value="cash">Cash</option>
+            <option value="online">Online</option>
+            <option value="unspecified">Not specified</option>
+          </select>
           <input className="filter-input" type="date" placeholder="From"
             value={filters.date_from}
             onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))} />
@@ -91,6 +102,7 @@ export default function Incomes() {
                   <tr>
                     <th>Source</th>
                     <th>Date</th>
+                    <th>Payment Method</th>
                     <th>Amount</th>
                     <th>Allocated</th>
                     <th>Remaining</th>
@@ -105,6 +117,7 @@ export default function Incomes() {
                     <tr key={inc.id} onClick={() => navigate(`/incomes/${inc.id}`)}>
                       <td style={{ fontWeight: 500 }}>{inc.source}</td>
                       <td style={{ color: 'var(--text2)' }}>{fmtDate(inc.date)}</td>
+                      <td><span className="tag">{paymentMethodLabel(inc.payment_method)}</span></td>
                       <td className="amount">{fmt(inc.amount)}</td>
                       <td className="amount" style={{ color: 'var(--purple)' }}>{fmt(inc.allocated_amount)}</td>
                       <td className="amount" style={{ color: 'var(--green)' }}>{fmt(inc.remaining_amount)}</td>
