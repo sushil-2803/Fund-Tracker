@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { fmt, fmtDateTime, fmtDate } from '../utils';
+import { fmt, fmtDateTime, fmtDate, paymentMethodLabel } from '../utils';
 import { StatusBadge, Loading, EmptyState } from '../components/shared';
 import AllocationModal from '../components/AllocationModal';
 import IncomeModal from '../components/IncomeModal';
@@ -144,6 +144,7 @@ export default function Dashboard() {
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text3)' }}>
                         {fmtDateTime(item.created_at)}
+                        {item.payment_method ? ` · ${paymentMethodLabel(item.payment_method)}` : ''}
                       </div>
                     </div>
                     <div className="amount" style={{ fontSize: 13, color: activityColor[item.type], flexShrink: 0 }}>
