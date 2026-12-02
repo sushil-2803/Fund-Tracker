@@ -181,14 +181,17 @@ GET                  /api/dashboard/tags
 users (id, google_id UNIQUE, email UNIQUE/LOWER, name, avatar_url, created_at, updated_at)
 refresh_tokens (id, user_id→users, token_hash UNIQUE, expires_at, revoked_at)
 
-incomes    (id, user_id→users, amount NUMERIC(14,2), source, date, notes, …)
-expenses   (id, user_id→users, amount NUMERIC(14,2), category, date, notes, …)
+incomes    (id, user_id→users, amount NUMERIC(14,2), source, payment_method, date, notes, …)
+expenses   (id, user_id→users, amount NUMERIC(14,2), title, category, payment_method, date, notes, …)
 allocations(id, user_id→users, income_id→incomes, expense_id→expenses, amount, note, …)
 
 tags (id, name UNIQUE/LOWER)
 income_tags  (income_id, tag_id)
 expense_tags (expense_id, tag_id)
 ```
+
+`payment_method` accepts `cash`, `online`, or `unspecified`. Existing records and
+requests from older clients use `unspecified` so no payment history is guessed.
 
 ---
 
